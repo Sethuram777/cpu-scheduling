@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Simulator Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h2 class="nav-title">CPU Scheduling Simulator</h2>
+            <a href="index.html" class="btn-home">Home</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="dashboard-content">
+            <!-- Left Panel: Input Form -->
+            <div class="input-section">
+                <h3>Add Process</h3>
+                
+                <div class="form-group">
+                    <label for="algorithm-select">Select Algorithm:</label>
+                    <select id="algorithm-select" class="algorithm-select">
+                        <option value="fcfs">FCFS (First Come First Serve)</option>
+                        <option value="sjf">SJF (Shortest Job First)</option>
+                        <option value="rrs">RRS (Round Robin Scheduling)</option>
+                        <option value="ljf">LJF (Longest Job First)</option>
+                        <option value="priority">Priority Scheduling</option>
+                        <option value="lrtf">LRTF (Longest Remaining Time First)</option>
+                        <option value="srtf">SRTF (Shortest Remaining Time First)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="process-id">Process ID:</label>
+                    <input type="text" id="process-id" placeholder="e.g., P1">
+                </div>
+
+                <div class="form-group">
+                    <label for="arrival-time">Arrival Time:</label>
+                    <input type="number" id="arrival-time" min="0" placeholder="e.g., 0">
+                </div>
+
+                <div class="form-group">
+                    <label for="burst-time">Burst Time:</label>
+                    <input type="number" id="burst-time" min="1" placeholder="e.g., 5">
+                </div>
+
+                <div class="form-group" id="priority-group" style="display:none;">
+                    <label for="priority">Priority:</label>
+                    <input type="number" id="priority" min="1" placeholder="e.g., 1 (lower = higher priority)">
+                </div>
+
+                <div class="form-group" id="quantum-group" style="display:none;">
+                    <label for="time-quantum">Time Quantum (for Round Robin):</label>
+                    <input type="number" id="time-quantum" min="1" placeholder="e.g., 2">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-add" onclick="addProcess()">Add Process</button>
+                    <button class="btn btn-reset" onclick="resetForm()">Reset Form</button>
+                </div>
+
+                <div id="error-message" class="error-message"></div>
+            </div>
+
+            <!-- Right Panel: Table and Controls -->
+            <div class="table-section">
+                <h3>Process Table</h3>
+                <div class="table-wrapper">
+                    <table id="process-table" class="process-table">
+                        <thead>
+                            <tr>
+                                <th>Process ID</th>
+                                <th>Arrival Time</th>
+                                <th>Burst Time</th>
+                                <th>Priority</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn btn-visualize" onclick="runSimulation()">Visualize</button>
+                    <button class="btn btn-clear" onclick="clearAll()">Clear All</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" style="display:none;">
+            <h3>Scheduling Results</h3>
+            <div class="results-grid">
+                <div class="results-table-wrapper">
+                    <h4>Process Metrics</h4>
+                    <table id="results-table" class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Process ID</th>
+                                <th>Arrival Time</th>
+                                <th>Burst Time</th>
+                                <th>Completion Time</th>
+                                <th>Turnaround Time</th>
+                                <th>Waiting Time</th>
+                                <th>Response Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="averages-section">
+                    <h4>Averages</h4>
+                    <div class="average-box">
+                        <div class="average-item">
+                            <span class="avg-label">Avg Turnaround Time:</span>
+                            <span class="avg-value" id="avg-tat">-</span>
+                        </div>
+                        <div class="average-item">
+                            <span class="avg-label">Avg Waiting Time:</span>
+                            <span class="avg-value" id="avg-wt">-</span>
+                        </div>
+                        <div class="average-item">
+                            <span class="avg-label">Avg Completion Time:</span>
+                            <span class="avg-value" id="avg-ct">-</span>
+                        </div>
+                        <div class="average-item">
+                            <span class="avg-label">Avg Response Time:</span>
+                            <span class="avg-value" id="avg-rt">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gantt Chart -->
+            <div class="gantt-section">
+                <div class="gantt-container">
+                    <h4 class="gantt-title">Gantt Chart</h4>
+                    
+                    <div class="gantt-chart-wrapper">
+                        <div class="gantt-bar-container">
+                            <div id="gantt-bar" class="gantt-bar">
+                                <!-- Gantt blocks will be rendered here -->
+                            </div>
+                            <div class="gantt-scale" id="gantt-scale">
+                                <!-- Time scale will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="gantt-legend" class="gantt-legend-container">
+                        <!-- Legend will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Dashboard Section -->
+            <div class="analytics-section">
+                <div class="analytics-header">
+                    <div class="analytics-icon">📊</div>
+                    <h3 class="analytics-title">Analytics Dashboard</h3>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-cards-container">
+                    <div class="kpi-card kpi-waiting-time">
+                        <div class="kpi-icon">⏱️</div>
+                        <div class="kpi-value" id="kpi-waiting-time">0.00</div>
+                        <div class="kpi-unit">milliseconds</div>
+                        <div class="kpi-label">Avg Waiting Time</div>
+                    </div>
+
+                    <div class="kpi-card kpi-turnaround-time">
+                        <div class="kpi-icon">⌛</div>
+                        <div class="kpi-value" id="kpi-turnaround-time">0.00</div>
+                        <div class="kpi-unit">milliseconds</div>
+                        <div class="kpi-label">Avg Turnaround Time</div>
+                    </div>
+
+                    <div class="kpi-card kpi-cpu-utilization">
+                        <div class="kpi-icon">⚡</div>
+                        <div class="kpi-value" id="kpi-cpu-utilization">0.00%</div>
+                        <div class="kpi-unit">efficiency</div>
+                        <div class="kpi-label">CPU Utilization</div>
+                    </div>
+
+                    <div class="kpi-card kpi-execution-time">
+                        <div class="kpi-icon">🔧</div>
+                        <div class="kpi-value" id="kpi-execution-time">0</div>
+                        <div class="kpi-unit">time units</div>
+                        <div class="kpi-label">Total Execution Time</div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics Chart -->
+
+                   
+           
+            <!-- Time Distribution Pie Chart -->
+            <div class="analytics-row">
+                <div class="analytics-card">
+                    <div class="card-header">
+                        <h4 class="card-title">⏰ Time Distribution</h4>
+                    </div>
+                    <div class="pie-chart-container">
+                        <div class="pie-chart-wrapper">
+                            <svg class="pie-chart" id="time-distribution-pie" viewBox="0 0 200 200">
+                                <!-- Pie chart will be rendered here -->
+                            </svg>
+                        </div>
+                        <div class="pie-legend" id="time-distribution-legend">
+                            <!-- Legend items will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Algorithm Insights Panel -->
+                <div class="analytics-card">
+                    <div class="card-header">
+                        <h4 class="card-title">🔍 Algorithm Insights</h4>
+                    </div>
+                    <div class="insights-content">
+                        <div class="insight-item">
+                            <span class="insight-label">Algorithm Used:</span>
+                            <span class="insight-value" id="algorithm-used">—</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">Total Processes:</span>
+                            <span class="insight-value" id="total-processes">—</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">Context Switches:</span>
+                            <span class="insight-value" id="context-switches">—</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">Throughput:</span>
+                            <span class="insight-value" id="throughput">—</span>
+                        </div>
+                        <div class="insight-item">
+                            <span class="insight-label">Avg Response Ratio:</span>
+                            <span class="insight-value" id="avg-response-ratio">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistical Summary -->
+            
+                
+                <div class="stats-grid">
+                    <!-- Waiting Time Statistics -->
+                    <div class="stats-card">
+                        <h4 class="stats-card-title">Waiting Time Statistics</h4>
+                        <div class="stats-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Minimum:</span>
+                                <span class="stat-value" id="wt-min">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Maximum:</span>
+                                <span class="stat-value" id="wt-max">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Median:</span>
+                                <span class="stat-value" id="wt-median">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Average:</span>
+                                <span class="stat-value" id="wt-avg">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Std Deviation:</span>
+                                <span class="stat-value" id="wt-stddev">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Turnaround Time Statistics -->
+                    <div class="stats-card">
+                        <h4 class="stats-card-title">Turnaround Time Statistics</h4>
+                        <div class="stats-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Minimum:</span>
+                                <span class="stat-value" id="tat-min">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Maximum:</span>
+                                <span class="stat-value" id="tat-max">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Median:</span>
+                                <span class="stat-value" id="tat-median">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Average:</span>
+                                <span class="stat-value" id="tat-avg">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Std Deviation:</span>
+                                <span class="stat-value" id="tat-stddev">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burst Time Statistics -->
+                    <div class="stats-card">
+                        <h4 class="stats-card-title">Process Burst Time Stats</h4>
+                        <div class="stats-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Minimum:</span>
+                                <span class="stat-value" id="bt-min">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Maximum:</span>
+                                <span class="stat-value" id="bt-max">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Median:</span>
+                                <span class="stat-value" id="bt-median">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Average:</span>
+                                <span class="stat-value" id="bt-avg">—</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Total:</span>
+                                <span class="stat-value" id="bt-total">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
